@@ -1,0 +1,17 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url "https://jitpack.io" }
+    }
+    dependencies {
+        classpath libs.gradle  // Use version catalog for gradle plugin
+        classpath libs.kotlin.gradle.plugin  // Use version catalog for kotlin plugin
+    }
+}
+
+plugins {
+    alias(libs.plugins.android.application) apply false  // Apply android plugin via catalog
+    alias(libs.plugins.kotlin.android) apply false  // Apply Kotlin plugin via catalog
+}
