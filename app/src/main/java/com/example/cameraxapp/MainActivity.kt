@@ -57,6 +57,14 @@ class MainActivity : AppCompatActivity() {
         } else {
             requestPermissions()
         }
+
+        /* Initialize OpenCV
+        if (!OpenCVLoader.initDebug()) {
+            Log.e("OpenCV", "OpenCV initialization failed!")
+        } else {
+            Log.d("OpenCV", "OpenCV initialization succeeded!")
+        }*/
+
         cameraExecutor = Executors.newSingleThreadExecutor()
     }
 

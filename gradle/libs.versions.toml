@@ -14,6 +14,7 @@ kotlinStdlib = "1.9.24"
 material = "1.10.0"
 activity = "1.9.3"
 constraintlayout = "2.1.4"
+opencv = "3.4.1"
 opencvAndroid = "4.7.0"
 opencvAndroidVersion = "4.5.1"
 opencvOpencvAndroid = "5.0.0"
@@ -37,6 +38,7 @@ kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
+opencv = { module = "com.quickbirdstudios:opencv", version.ref = "opencv" }
 opencv-android = { module = "org.opencv:opencv-android", version.ref = "opencvAndroid" }
 opencv-android-v451 = { module = "org.opencv:opencv-android", version.ref = "opencvAndroidVersion" }
 opencv-android-v500 = { module = "org.opencv:opencv-android", version.ref = "opencvOpencvAndroid" }
