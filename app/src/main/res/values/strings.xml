@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">CameraXApp</string>
+    <string name="overlay_for_highlighted_notes">Overlay for highlighted notes</string>
+    <string name="luminance_0">Luminance: 0</string>
+    <string name="capture_image">Capture Image</string>
+    <string name="read_notes">Read Notes</string>
 </resources>

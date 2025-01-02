@@ -1,51 +1,37 @@
 package com.example.cameraxapp
 
 import android.Manifest
-import android.content.ContentValues
-import android.content.pm.PackageManager
-import android.os.Build
+import android.content.Intent
+import android.graphics.Bitmap
+import android.net.Uri
 import android.os.Bundle
-import android.provider.MediaStore
-import androidx.appcompat.app.AppCompatActivity
-import androidx.camera.core.ImageCapture
-import androidx.camera.video.Recorder
-import androidx.camera.video.Recording
-import androidx.camera.video.VideoCapture
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import com.example.cameraxapp.databinding.ActivityMainBinding
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
+import android.util.Log
+import android.widget.ArrayAdapter
+import android.widget.Button
+import android.widget.Spinner
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
+import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.core.Preview
-import androidx.camera.core.CameraSelector
-import android.util.Log
-import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.ImageCaptureException
-import androidx.camera.core.ImageProxy
-import androidx.camera.video.FallbackStrategy
-import androidx.camera.video.MediaStoreOutputOptions
-import androidx.camera.video.Quality
-import androidx.camera.video.QualitySelector
-import androidx.camera.video.VideoRecordEvent
-import androidx.core.content.PermissionChecker
-import java.nio.ByteBuffer
-import java.text.SimpleDateFormat
-import java.util.Locale
-import android.graphics.Bitmap
-import android.os.Handler
-import android.os.Looper
-import android.widget.TextView
+import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
+import com.example.cameraxapp.databinding.ActivityMainBinding
+import java.io.File
+import android.content.pm.PackageManager
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts.RequestPermission
 import org.opencv.android.OpenCVLoader
-
 
 
 class MainActivity : AppCompatActivity() {
     private lateinit var viewBinding: ActivityMainBinding
 
-    private lateinit var cameraExecutor: ExecutorService
+    private lateinit var clefSpinner: Spinner
+    private lateinit var keySignatureSpinner: Spinner
+    private lateinit var captureButton: Button
+
+    private lateinit var imageCapture: ImageCapture
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,16 +45,54 @@ class MainActivity : AppCompatActivity() {
             requestPermissions()
         }
 
-        //Initialize OpenCV
+        // Initialize OpenCV
         if (!OpenCVLoader.initDebug()) {
-            Log.e("OpenCV", "OpenCV initialization failed!")
+            Log.e(TAG, "OpenCV initialization failed!")
         } else {
-            Log.d("OpenCV", "OpenCV initialization succeeded!")
+            Log.d(TAG, "OpenCV initialization succeeded.")
         }
 
-        cameraExecutor = Executors.newSingleThreadExecutor()
-    }
+        // Initialize UI components
+        clefSpinner = findViewById(R.id.clefSpinner)
+        keySignatureSpinner = findViewById(R.id.keySignatureSpinner)
+        captureButton = findViewById(R.id.captureButton)
 
+        // Setup the clef dropdown
+        val clefOptions = arrayOf("Treble Clef", "Bass Clef", "C Clef")
+        val clefAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, clefOptions)
+        clefAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        clefSpinner.adapter = clefAdapter
+
+        // Setup the key signature dropdown (Example: C Major, G Major, etc.)
+        val keyOptions = arrayOf(
+            "F♯ major/F♯ minor",
+            "C♯ major/C♯ minor",
+            "G♯ major/G♯ minor",
+            "D major/B minor",
+            "A major/F♯ minor",
+            "E major/C♯ minor",
+            "B major/G♯ minor",
+            "F major/D minor",
+            "B♭ major/G minor",
+            "E♭ major/C minor",
+            "A♭ major/F minor",
+            "D♭ major/B♭ minor",
+            "G♭ major/E♭ minor",
+            "C♭ major/A♭ minor",
+            "F♭ major/D♭ minor",
+            "C major/A minor"
+        )
+
+        val keyAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, keyOptions)
+        keyAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        keySignatureSpinner.adapter = keyAdapter
+
+        // Handle the Capture button click event
+        captureButton.setOnClickListener {
+            // Capture the image
+            captureImage()
+        }
+    }
 
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
@@ -80,19 +104,15 @@ class MainActivity : AppCompatActivity() {
             val preview = Preview.Builder()
                 .build()
                 .also {
-                    it.surfaceProvider = viewBinding.viewFinder.surfaceProvider
+                    it.setSurfaceProvider(viewBinding.viewFinder.surfaceProvider)
                 }
 
-            // Set up ImageAnalysis with FrameAnalyzer
-            val imageAnalysis = ImageAnalysis.Builder()
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            // ImageCapture use case
+            imageCapture = ImageCapture.Builder()
+                .setTargetAspectRatio(AspectRatio.RATIO_16_9)
+                .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
                 .build()
-                .also {
-                    // Pass the TextView to FrameAnalyzer to display luminance
-                    it.setAnalyzer(cameraExecutor, FrameAnalyzer(viewBinding.luminanceTextView))
-                }
 
-            // Select back camera as a default
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
             try {
@@ -101,87 +121,66 @@ class MainActivity : AppCompatActivity() {
 
                 // Bind use cases to camera
                 cameraProvider.bindToLifecycle(
-                    this, cameraSelector, preview, imageAnalysis)
+                    this, cameraSelector, preview, imageCapture
+                )
 
             } catch (exc: Exception) {
                 Log.e(TAG, "Use case binding failed", exc)
             }
-
         }, ContextCompat.getMainExecutor(this))
     }
 
+    private fun captureImage() {
+        val file = File(externalMediaDirs.first(), "captured_image.jpg")
+        val outputOptions = ImageCapture.OutputFileOptions.Builder(file).build()
+
+        imageCapture.takePicture(
+            outputOptions, ContextCompat.getMainExecutor(this),
+            object : ImageCapture.OnImageSavedCallback {
+                override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+                    val savedUri = Uri.fromFile(file)
+                    Log.d(TAG, "Image captured: $savedUri")
+
+                    // Pass the captured image URI to the review screen
+                    val intent = Intent(this@MainActivity, ReviewActivity::class.java).apply {
+                        putExtra("image_uri", savedUri.toString())
+                    }
+                    startActivity(intent)
+                }
+
+                override fun onError(exception: ImageCaptureException) {
+                    Log.e(TAG, "Error capturing image", exception)
+                }
+            }
+        )
+    }
 
     private fun requestPermissions() {
         activityResultLauncher.launch(REQUIRED_PERMISSIONS)
     }
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
-        ContextCompat.checkSelfPermission(
-            baseContext, it) == PackageManager.PERMISSION_GRANTED
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        cameraExecutor.shutdown()
+        ContextCompat.checkSelfPermission(baseContext, it) == PackageManager.PERMISSION_GRANTED
     }
 
     companion object {
-        private const val TAG = "CameraXApp"
-        private val REQUIRED_PERMISSIONS =
-            mutableListOf (
-                Manifest.permission.CAMERA
-            ).apply {
-                if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
-                    add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                }
-            }.toTypedArray()
+        private val REQUIRED_PERMISSIONS = arrayOf(
+            Manifest.permission.CAMERA
+        )
+        private const val TAG = "MainActivity"
     }
 
     private val activityResultLauncher =
-        registerForActivityResult(
-            ActivityResultContracts.RequestMultiplePermissions())
-        { permissions ->
-            // Handle Permission granted/rejected
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
             var permissionGranted = true
             permissions.entries.forEach {
                 if (it.key in REQUIRED_PERMISSIONS && !it.value)
                     permissionGranted = false
             }
             if (!permissionGranted) {
-                Toast.makeText(baseContext,
-                    "Permission request denied",
-                    Toast.LENGTH_SHORT).show()
+                Toast.makeText(baseContext, "Permission request denied", Toast.LENGTH_SHORT).show()
             } else {
                 startCamera()
             }
         }
 }
-
-private class FrameAnalyzer(private val luminanceTextView: TextView) : ImageAnalysis.Analyzer {
-
-    // Handler to post UI updates on the main thread
-    private val mainHandler = Handler(Looper.getMainLooper())
-
-    override fun analyze(image: ImageProxy) {
-        // Calculate luminance
-        val luminance = calculateAverageLuminance(image)
-
-        // Post the luminance value to the main thread to update the UI
-        mainHandler.post {
-            luminanceTextView.text = "Luminance: %.2f".format(luminance)
-        }
-
-        // Close the image when done
-        image.close()
-    }
-
-    private fun calculateAverageLuminance(image: ImageProxy): Double {
-        val buffer = image.planes[0].buffer // Y plane (luminance)
-        val data = ByteArray(buffer.remaining())
-        buffer.get(data)
-
-        return data.map { it.toInt() and 0xFF }.average()
-    }
-}
-
-

@@ -1,31 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity">
-
-    <androidx.camera.view.PreviewView
-        android:id="@+id/viewFinder"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-
-    <androidx.constraintlayout.widget.Guideline
-        android:id="@+id/vertical_centerline"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="vertical"
-        app:layout_constraintGuide_percent=".50" />
+        android:padding="16dp">
 
-    <TextView
-        android:id="@+id/luminanceTextView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Luminance: 0"
-        android:textSize="18sp"
-        android:layout_centerInParent="true"/>
+        <!-- Camera Preview -->
+        <androidx.camera.view.PreviewView
+            android:id="@+id/viewFinder"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
 
+        <!-- Clef Spinner (Dropdown) -->
+        <Spinner
+            android:id="@+id/clefSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- Key Signature Spinner (Dropdown) -->
+        <Spinner
+            android:id="@+id/keySignatureSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- Capture Image Button -->
+        <Button
+            android:id="@+id/captureButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/capture_image"
+            android:layout_marginTop="16dp" />
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
