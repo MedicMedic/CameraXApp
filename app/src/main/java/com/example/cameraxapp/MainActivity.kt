@@ -38,6 +38,7 @@ import android.graphics.Bitmap
 import android.os.Handler
 import android.os.Looper
 import android.widget.TextView
+import org.opencv.android.OpenCVLoader
 
 
 
@@ -58,12 +59,12 @@ class MainActivity : AppCompatActivity() {
             requestPermissions()
         }
 
-        /* Initialize OpenCV
+        //Initialize OpenCV
         if (!OpenCVLoader.initDebug()) {
             Log.e("OpenCV", "OpenCV initialization failed!")
         } else {
             Log.d("OpenCV", "OpenCV initialization succeeded!")
-        }*/
+        }
 
         cameraExecutor = Executors.newSingleThreadExecutor()
     }
